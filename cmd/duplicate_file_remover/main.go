@@ -1,14 +1,16 @@
 package main
 
 import (
+	// std
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
-	"path/filepath"
 
+	// internals
 	"github.com/hoodnoah/duplicate_file_remover/internal/args"
+	"github.com/hoodnoah/duplicate_file_remover/internal/files"
 
+	// community
 	"github.com/OneOfOne/xxhash"
 )
 
@@ -20,29 +22,16 @@ func main() {
 		panic(1)
 	}
 
-	files := make([]string, 0)
-
-	err = filepath.Walk(argsResult.WorkingPath, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			fmt.Printf("Failed to visit %s...\n", path)
-			return err
-		}
-
-		if !info.IsDir() {
-			files = append(files, path)
-		}
-
-		return nil
-	})
-
+	filesIterator, err := files.FilesIteratorNew(argsResult.WorkingPath)
 	if err != nil {
-		fmt.Printf("Failed to traverse files, %s\n", err)
+		fmt.Printf("Failed to create files iterator with error %s\n", err)
+		fmt.Printf("Exiting.\n")
+		panic(1)
 	}
 
 	var fileHashMaps map[uint64][]string = make(map[uint64][]string, 0)
-
 	hasher := xxhash.New64()
-	for _, filepath := range files {
+	for filepath := range filesIterator.C {
 		// open the file
 		reader, err := os.Open(filepath)
 		if err != nil {
