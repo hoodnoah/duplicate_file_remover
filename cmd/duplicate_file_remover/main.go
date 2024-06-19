@@ -7,23 +7,22 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hoodnoah/duplicate_file_remover/internal/args"
+
 	"github.com/OneOfOne/xxhash"
 )
 
 func main() {
-	args := os.Args[1:]
-
-	relativePath := args[0]
-
-	directory, err := filepath.Abs(relativePath)
+	argsResult, err := args.Consume(os.Args)
 	if err != nil {
-		fmt.Printf("Failed to locate path of files to de-duplicate: %s", err)
+		fmt.Printf("Failed to consume args with error: %s\n", err)
+		fmt.Printf("Exiting.\n")
 		panic(1)
 	}
 
 	files := make([]string, 0)
 
-	err = filepath.Walk(directory, func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(argsResult.WorkingPath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			fmt.Printf("Failed to visit %s...\n", path)
 			return err
