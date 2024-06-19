@@ -58,15 +58,30 @@ func main() {
 		hasher.Reset()
 	}
 
+	num_duplicates := 0
+	duplicates_removed := 0
+
 	for _, paths := range fileHashMaps {
 		if len(paths) > 1 {
+			num_duplicates += len(paths) - 1
 			parent := paths[0]
 			children := paths[1:]
 
 			fmt.Printf("Parent file %s has children:\n", parent)
 			for _, child := range children {
 				fmt.Printf("\t%s\n", child)
+
+				err = os.Remove(child)
+				if err != nil {
+					fmt.Printf("Failed to remove file %s", child)
+				} else {
+					duplicates_removed++
+				}
 			}
 		}
 	}
+
+	fmt.Println()
+	fmt.Printf("Found %d duplicate files.\n", num_duplicates)
+	fmt.Printf("Removed %d duplicate files.\n", duplicates_removed)
 }
