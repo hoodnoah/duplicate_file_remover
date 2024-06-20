@@ -38,17 +38,27 @@ func HasherNew(numThreads int, filePathsChannel chan string) *Hasher {
 }
 
 func (h *Hasher) HashFiles() {
-	xHasher := xxhash.New64()
-	for filePath := range h.filePathsChannel {
-		hashedFile, err := hashFile(xHasher, filePath)
-		if err != nil {
-			fmt.Printf("Failed to hash file %s with error %s, skipping\n", filePath, err)
-		} else {
-			h.hashMapMutex.Lock()
-			h.fileHashMap[hashedFile.hash] = append(h.fileHashMap[hashedFile.hash], hashedFile.path)
-			h.hashMapMutex.Unlock()
-		}
+	var waitGroup sync.WaitGroup
+
+	for range h.numThreads {
+		waitGroup.Add(1)
+		go func() {
+			hasher := xxhash.New64()
+			for filePath := range h.filePathsChannel {
+				hashedFile, err := hashFile(hasher, filePath)
+				if err != nil {
+					fmt.Printf("Failed to hash file %s with error %s, skipping.\n", filePath, err)
+				} else {
+					h.hashMapMutex.Lock()
+					h.fileHashMap[hashedFile.hash] = append(h.fileHashMap[hashedFile.hash], hashedFile.path)
+					h.hashMapMutex.Unlock()
+				}
+			}
+			waitGroup.Done()
+		}()
 	}
+
+	waitGroup.Wait() // let execution run
 }
 
 func (h *Hasher) GetDuplicates() []FileDuplicate {

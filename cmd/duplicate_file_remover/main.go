@@ -10,7 +10,6 @@ import (
 	"github.com/hoodnoah/duplicate_file_remover/internal/args"
 	"github.com/hoodnoah/duplicate_file_remover/internal/files"
 	"github.com/hoodnoah/duplicate_file_remover/internal/hashing"
-	// community
 )
 
 func main() {
