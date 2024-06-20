@@ -3,18 +3,19 @@ package main
 import (
 	// std
 	"fmt"
-	"io"
 	"os"
+	"runtime"
 
 	// internals
 	"github.com/hoodnoah/duplicate_file_remover/internal/args"
 	"github.com/hoodnoah/duplicate_file_remover/internal/files"
-
+	"github.com/hoodnoah/duplicate_file_remover/internal/hashing"
 	// community
-	"github.com/OneOfOne/xxhash"
 )
 
 func main() {
+	numThreads := runtime.NumCPU()
+
 	argsResult, err := args.Consume(os.Args)
 	if err != nil {
 		fmt.Printf("Failed to consume args with error: %s\n", err)
@@ -22,50 +23,28 @@ func main() {
 		panic(1)
 	}
 
-	filesIterator, err := files.FilesIteratorNew(argsResult.WorkingPath)
+	filesIterator, err := files.FilesIteratorNew(argsResult.WorkingPath, numThreads)
 	if err != nil {
 		fmt.Printf("Failed to create files iterator with error %s\n", err)
 		fmt.Printf("Exiting.\n")
 		panic(1)
 	}
 
-	var fileHashMaps map[uint64][]string = make(map[uint64][]string, 0)
-	hasher := xxhash.New64()
-	for filepath := range filesIterator.C {
-		// open the file
-		reader, err := os.Open(filepath)
-		if err != nil {
-			fmt.Printf("Failed to open %s with error %s, skipping", filepath, err)
-			continue
-		}
-		io.Copy(hasher, reader)
-		hash := hasher.Sum64()
-		children := append(fileHashMaps[hash], filepath)
-		fileHashMaps[hash] = children
-		reader.Close()
-		hasher.Reset()
-	}
+	fileHasher := hashing.HasherNew(numThreads, filesIterator.C)
+	fileHasher.HashFiles()
+	duplicates := fileHasher.GetDuplicates()
 
 	num_duplicates := 0
 	duplicates_removed := 0
 
-	for _, paths := range fileHashMaps {
-		if len(paths) > 1 {
-			num_duplicates += len(paths) - 1
-			parent := paths[0]
-			children := paths[1:]
-
-			fmt.Printf("Parent file %s has children:\n", parent)
-			for _, child := range children {
-				fmt.Printf("\t%s\n", child)
-
-				err = os.Remove(child)
-				if err != nil {
-					fmt.Printf("Failed to remove file %s", child)
-				} else {
-					duplicates_removed++
-				}
+	for _, duplicate := range duplicates {
+		num_duplicates += len(duplicate.Children)
+		for _, child := range duplicate.Children {
+			err := os.Remove(child)
+			if err != nil {
+				fmt.Printf("Failed to remove file %s with error %s, skipping", child, err)
 			}
+			duplicates_removed++
 		}
 	}
 

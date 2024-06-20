@@ -3,7 +3,6 @@ package files
 import (
 	"io/fs"
 	"path/filepath"
-	"runtime"
 )
 
 type FilesIterator struct {
@@ -11,8 +10,7 @@ type FilesIterator struct {
 	C    chan string
 }
 
-func FilesIteratorNew(path string) (*FilesIterator, error) {
-	numCores := runtime.NumCPU()
+func FilesIteratorNew(path string, numCores int) (*FilesIterator, error) {
 	filesChannel := make(chan string, numCores)
 
 	filesIterator := &FilesIterator{
