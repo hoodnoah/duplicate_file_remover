@@ -1,3 +1,5 @@
 test_data
 .DS_Store
 timings.txt
+build
+profiling
