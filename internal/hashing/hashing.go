@@ -86,7 +86,7 @@ func hashFile(hasher *xxhash.XXHash64, path string) (*hashedFile, error) {
 	defer file.Close()
 
 	// use buffered reader to reduce system calls per flame graph
-	bufferedReader := bufio.NewReaderSize(file, 16*1024) // 16KiB buffer size
+	bufferedReader := bufio.NewReaderSize(file, 256*1024) // 16KiB buffer size
 	if _, err := bufferedReader.WriteTo(hasher); err != nil {
 		return nil, err
 	}
