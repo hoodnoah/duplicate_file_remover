@@ -1,8 +1,8 @@
 package hashing
 
 import (
+	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"sync"
 
@@ -79,13 +79,18 @@ func (h *Hasher) GetDuplicates() []FileDuplicate {
 
 // hashes a file, returning the hash and the path
 func hashFile(hasher *xxhash.XXHash64, path string) (*hashedFile, error) {
-	reader, err := os.Open(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer file.Close()
 
-	io.Copy(hasher, reader)
+	// use buffered reader to reduce system calls per flame graph
+	bufferedReader := bufio.NewReaderSize(file, 16*1024) // 16KiB buffer size
+	if _, err := bufferedReader.WriteTo(hasher); err != nil {
+		return nil, err
+	}
+
 	hash := hasher.Sum64()
 	defer hasher.Reset()
 
