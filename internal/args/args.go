@@ -1,7 +1,6 @@
 package args
 
 import (
-	"fmt"
 	"path/filepath"
 )
 
@@ -9,13 +8,28 @@ type Args struct {
 	WorkingPath string
 }
 
+type AbsPathResolver interface { // abstract interface, for testing
+	Abs(path string) (string, error)
+}
+
+type DefaultPathResolver struct{}
+
+func (dr *DefaultPathResolver) Abs(path string) (string, error) {
+	return filepath.Abs(path)
+}
+
 // consumes the args, putting them into a struct
-func Consume(args []string) (*Args, error) {
-	if len(args) < 2 {
-		return nil, fmt.Errorf("expected 2 args, received %d", len(args))
+func Consume(args []string, resolver AbsPathResolver) (*Args, error) {
+	var pathString string
+
+	if len(args) < 2 { // default to current directory
+		pathString = "."
+	} else {
+		pathString = args[1]
 	}
 
-	path, err := filepath.Abs(args[1])
+	path, err := resolver.Abs(pathString)
+
 	if err != nil {
 		return nil, err
 	}

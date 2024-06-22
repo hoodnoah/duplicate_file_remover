@@ -15,7 +15,7 @@ import (
 func main() {
 	numThreads := runtime.NumCPU()
 
-	argsResult, err := args.Consume(os.Args)
+	argsResult, err := args.Consume(os.Args, &args.DefaultPathResolver{})
 	if err != nil {
 		fmt.Printf("Failed to consume args with error: %s\n", err)
 		fmt.Printf("Exiting.\n")
