@@ -14,6 +14,7 @@ type Hasher struct {
 	filePathsChannel chan string
 	fileHashMap      map[uint64][]string
 	hashMapMutex     sync.Mutex
+	hasherPool       sync.Pool
 }
 
 type hashedFile struct {
@@ -29,11 +30,18 @@ type FileDuplicate struct {
 func HasherNew(numThreads int, filePathsChannel chan string) *Hasher {
 	filesMap := make(map[uint64][]string, 0)
 
+	var hasherPool = sync.Pool{
+		New: func() interface{} {
+			return xxhash.New64()
+		},
+	}
+
 	return &Hasher{
 		numThreads:       numThreads,
 		filePathsChannel: filePathsChannel,
 		fileHashMap:      filesMap,
 		hashMapMutex:     sync.Mutex{},
+		hasherPool:       hasherPool,
 	}
 }
 
@@ -43,7 +51,7 @@ func (h *Hasher) HashFiles() {
 	for range h.numThreads {
 		waitGroup.Add(1)
 		go func() {
-			hasher := xxhash.New64()
+			hasher := h.hasherPool.Get().(*xxhash.XXHash64)
 			for filePath := range h.filePathsChannel {
 				hashedFile, err := hashFile(hasher, filePath)
 				if err != nil {
@@ -54,6 +62,7 @@ func (h *Hasher) HashFiles() {
 					h.hashMapMutex.Unlock()
 				}
 			}
+			h.hasherPool.Put(hasher)
 			waitGroup.Done()
 		}()
 	}
