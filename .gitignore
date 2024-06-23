@@ -3,3 +3,4 @@ test_data
 timings.txt
 build
 profilingheap.txt
+heap.txt

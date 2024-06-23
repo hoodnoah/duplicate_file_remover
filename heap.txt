@@ -1,9 +1,0 @@
-79495ae (HEAD -> profiling, origin/main, main) revert buffered io; in-practice testing showed no speedup
-----------------------------------------------
-Total: 5.83MB
-Hasher: 1.76MB
-
-246a0da (HEAD -> profiling) set up sync.pool to reuse hashers
-----------------------------------------------
-Total: 4.21MB
-Hasher: 0.5MB
