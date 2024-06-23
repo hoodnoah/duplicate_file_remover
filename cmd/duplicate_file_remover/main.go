@@ -22,7 +22,7 @@ func main() {
 		panic(1)
 	}
 
-	filesIterator, err := files.FilesIteratorNew(argsResult.WorkingPath, numThreads)
+	filesIterator, err := files.FilesIteratorNew(argsResult.WorkingPath, numThreads, &files.DefaultDirWalker{})
 	if err != nil {
 		fmt.Printf("Failed to create files iterator with error %s\n", err)
 		fmt.Printf("Exiting.\n")
